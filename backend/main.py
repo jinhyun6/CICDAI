@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, github, gcp, cicd, deployment, projects, rollback, analyze, github_actions, gcp_setup
 from app.core.config import settings
+import os
 
 app = FastAPI(
     title="CI/CD AI",
@@ -10,9 +11,17 @@ app = FastAPI(
 )
 
 # CORS 설정
+origins = settings.ALLOWED_ORIGINS.copy()
+if settings.FRONTEND_URL:
+    origins.append(settings.FRONTEND_URL)
+
+# 개발 중에는 모든 origin 허용 (프로덕션에서는 제거)
+if os.getenv("ENVIRONMENT", "development") == "development":
+    origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

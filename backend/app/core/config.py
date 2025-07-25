@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import List
+import os
 
 class Settings(BaseSettings):
     # 기본 설정
@@ -17,6 +18,9 @@ class Settings(BaseSettings):
         "http://localhost:5173",  # Vite 기본 포트
         "http://localhost:3000",
     ]
+    
+    # Frontend URL from environment
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "")
     
     # OAuth - GitHub
     GITHUB_CLIENT_ID: str = ""

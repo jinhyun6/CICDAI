@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -31,7 +32,7 @@ export const useAuthStore = defineStore('auth', {
     // 회원가입
     async register(userData) {
       try {
-        const response = await axios.post('http://localhost:8000/api/auth/register', userData)
+        const response = await axios.post(`${API_BASE_URL}/api/auth/register`, userData)
         this.token = response.data.access_token
         this.user = response.data.user
         this.isAuthenticated = true
@@ -55,7 +56,7 @@ export const useAuthStore = defineStore('auth', {
         formData.append('username', credentials.email)
         formData.append('password', credentials.password)
         
-        const response = await axios.post('http://localhost:8000/api/auth/login', formData)
+        const response = await axios.post('${API_BASE_URL}/api/auth/login', formData)
         this.token = response.data.access_token
         this.user = response.data.user
         this.isAuthenticated = true
@@ -91,7 +92,7 @@ export const useAuthStore = defineStore('auth', {
     // 사용자 정보 가져오기
     async fetchUserInfo() {
       try {
-        const response = await axios.get('http://localhost:8000/api/auth/me', {
+        const response = await axios.get('${API_BASE_URL}/api/auth/me', {
           headers: { Authorization: `Bearer ${this.token}` }
         })
         
@@ -107,7 +108,7 @@ export const useAuthStore = defineStore('auth', {
     // GitHub OAuth 콜백 처리
     async handleGithubCallback(code) {
       try {
-        const response = await axios.get(`http://localhost:8000/api/auth/github/callback?code=${code}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/auth/github/callback?code=${code}`, {
           headers: { Authorization: `Bearer ${this.token}` }
         })
         
@@ -126,7 +127,7 @@ export const useAuthStore = defineStore('auth', {
     // Google OAuth 콜백 처리
     async handleGoogleCallback(code) {
       try {
-        const response = await axios.get(`http://localhost:8000/api/auth/google/callback?code=${code}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/auth/google/callback?code=${code}`, {
           headers: { Authorization: `Bearer ${this.token}` }
         })
         
