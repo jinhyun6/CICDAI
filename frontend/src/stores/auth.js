@@ -42,9 +42,16 @@ export const useAuthStore = defineStore('auth', {
         
         return { success: true }
       } catch (error) {
+        console.error('Register error:', error)
+        if (error.code === 'ERR_NETWORK') {
+          return { 
+            success: false, 
+            error: '네트워크 연결 오류: 서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.' 
+          }
+        }
         return { 
           success: false, 
-          error: error.response?.data?.detail || '회원가입 실패' 
+          error: error.response?.data?.detail || `회원가입 실패: ${error.message}` 
         }
       }
     },
@@ -69,9 +76,16 @@ export const useAuthStore = defineStore('auth', {
         
         return { success: true }
       } catch (error) {
+        console.error('Login error:', error)
+        if (error.code === 'ERR_NETWORK') {
+          return { 
+            success: false, 
+            error: '네트워크 연결 오류: 서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.' 
+          }
+        }
         return { 
           success: false, 
-          error: error.response?.data?.detail || '로그인 실패' 
+          error: error.response?.data?.detail || `로그인 실패: ${error.message}` 
         }
       }
     },
