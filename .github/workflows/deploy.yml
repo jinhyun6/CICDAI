@@ -50,13 +50,17 @@ jobs:
           service: cicdai-backend
           image: ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/cicdai-repo/backend:${{ github.sha }}
           region: ${{ secrets.GCP_REGION }}
-          flags: --allow-unauthenticated --port=8000
+          flags: --allow-unauthenticated --port=8000 --memory=512Mi --cpu=1
           env_vars: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             REDIS_URL=${{ secrets.REDIS_URL }}
             SECRET_KEY=${{ secrets.SECRET_KEY }}
-          memory: 512Mi
-          cpu: 1
+            ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
+            GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
+            GITHUB_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Deploy Frontend to Cloud Run
         id: deploy-frontend
@@ -65,9 +69,7 @@ jobs:
           service: cicdai-frontend
           image: ${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/cicdai-repo/frontend:${{ github.sha }}
           region: ${{ secrets.GCP_REGION }}
-          flags: --allow-unauthenticated --port=80
-          memory: 512Mi
-          cpu: 1
+          flags: --allow-unauthenticated --port=80 --memory=512Mi --cpu=1
 
       - name: Show Output URLs
         run: |
