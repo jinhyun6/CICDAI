@@ -7,6 +7,9 @@
   "github": {
     "silent": true
   },
+  "env": {
+    "VITE_API_URL": "https://cicdai-backend-22v76y7s7a-du.a.run.app"
+  },
   "rewrites": [
     {
       "source": "/(.*)",

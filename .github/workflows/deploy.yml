@@ -78,14 +78,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Build Frontend with Backend URL
-        working-directory: ./frontend
-        env:
-          VITE_API_URL: ${{ steps.deploy-backend.outputs.url }}
-        run: |
-          npm ci
-          npm run build
-
       - name: Deploy Frontend to Vercel
         id: deploy-frontend
         env:
@@ -94,7 +86,7 @@ jobs:
           cd frontend
           npm install -g vercel@latest
           
-          # Deploy the pre-built dist folder to production
+          # Vercel will use env from vercel.json during build
           DEPLOYMENT_URL=$(vercel --token=$VERCEL_TOKEN --prod --yes)
           
           echo "Deployment URL: $DEPLOYMENT_URL"
