@@ -530,11 +530,21 @@ const executeSetup = async () => {
         // Step 2: GitHub Secrets 설정
         setupStatus.value.steps[2].status = 'in-progress'
         
+        // 환경변수 객체 생성
+        const envVars = {}
+        environmentVariables.value.forEach(env => {
+          if (env.key) {
+            const upperKey = env.key.toUpperCase().replace(/[^A-Z0-9_]/g, '_')
+            envVars[upperKey] = env.value
+          }
+        })
+        
         const secretsResponse = await axios.post('http://localhost:8000/api/github-actions/setup-github-secrets', {
           repo_full_name: selectedRepo.value,
           gcp_project_id: selectedProject.value,
           service_name: serviceName.value,
-          region: selectedRegion.value
+          region: selectedRegion.value,
+          environment_variables: envVars
         }, {
           headers: {
             'Authorization': `Bearer ${token}`

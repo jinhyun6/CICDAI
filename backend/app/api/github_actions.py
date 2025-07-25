@@ -196,6 +196,7 @@ async def setup_github_secrets(
     gcp_project_id = data.get("gcp_project_id")
     service_name = data.get("service_name")
     region = data.get("region", "us-central1")
+    environment_variables = data.get("environment_variables", {})
     
     if not repo_full_name:
         raise HTTPException(status_code=400, detail="Repository name required")
@@ -220,6 +221,10 @@ async def setup_github_secrets(
             "GCP_REGION": region,
             # GCP_SA_KEY는 별도로 처리 필요 (서비스 계정 생성 후)
         }
+        
+        # 사용자가 입력한 추가 환경변수도 포함 (있는 경우)
+        if environment_variables:
+            required_secrets.update(environment_variables)
         
         for secret_name, secret_value in required_secrets.items():
             if secret_value:
