@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', {
         formData.append('username', credentials.email)
         formData.append('password', credentials.password)
         
-        const response = await axios.post('${API_BASE_URL}/api/auth/login', formData)
+        const response = await axios.post(`${API_BASE_URL}/api/auth/login`, formData)
         this.token = response.data.access_token
         this.user = response.data.user
         this.isAuthenticated = true
@@ -92,7 +92,7 @@ export const useAuthStore = defineStore('auth', {
     // 사용자 정보 가져오기
     async fetchUserInfo() {
       try {
-        const response = await axios.get('${API_BASE_URL}/api/auth/me', {
+        const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${this.token}` }
         })
         
