@@ -94,18 +94,11 @@ jobs:
           cd frontend
           npm install -g vercel@latest
           
-          # First, link to the project if not already linked
-          vercel link --token=$VERCEL_TOKEN --yes --project=cicdai-frontend || true
-          
           # Deploy the pre-built dist folder to production
-          OUTPUT=$(vercel --token=$VERCEL_TOKEN --prod --name=cicdai-frontend)
-          echo "$OUTPUT"
+          DEPLOYMENT_URL=$(vercel --token=$VERCEL_TOKEN --prod --yes)
           
-          # The production URL should be cicdai-frontend.vercel.app
-          FRONTEND_URL="https://cicdai-frontend.vercel.app"
-          
-          echo "preview-url=$FRONTEND_URL" >> $GITHUB_OUTPUT
-          echo "Frontend deployed to: $FRONTEND_URL"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "preview-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
 
       # Output deployment URLs
       - name: Show Deployment URLs
