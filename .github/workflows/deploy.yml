@@ -68,10 +68,10 @@ jobs:
             REDIS_URL=${{ secrets.REDIS_URL }}
             SECRET_KEY=${{ secrets.SECRET_KEY }}
             ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
-            GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}
-            GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
+            GITHUB_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Show URLs
