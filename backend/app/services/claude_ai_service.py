@@ -95,9 +95,12 @@ IMPORTANT for services detection:
 1. An optimized Dockerfile (or multiple if needed)
 2. A GitHub Actions workflow file for CI/CD that:
    - Builds and tests the application
-   - Creates Docker images
+   - Creates Docker images using Google Artifact Registry (NOT Container Registry/gcr.io)
    - Deploys to Google Cloud Run
    - Includes proper error handling and rollback
+   - MUST use format: {region}-docker.pkg.dev/{project}/cicdai-repo/{image}
+   - MUST create Artifact Registry repository if it doesn't exist
+   - MUST authenticate with: gcloud auth configure-docker {region}-docker.pkg.dev
 
 Please respond with a JSON object in this exact format:
 {{
@@ -124,7 +127,7 @@ Please respond with a JSON object in this exact format:
     ],
     "github_workflow": {{
         "path": ".github/workflows/deploy.yml",
-        "content": "name: Deploy to Cloud Run\\n..."
+        "content": "name: Deploy to Cloud Run\\n\\non:\\n  push:\\n    branches: [ main ]\\n\\nenv:\\n  GCP_REGION: ${{{{ secrets.GCP_REGION }}}}\\n  GAR_LOCATION: ${{{{ secrets.GCP_REGION }}}}-docker.pkg.dev\\n\\njobs:\\n  deploy:\\n    runs-on: ubuntu-latest\\n    steps:\\n      - uses: actions/checkout@v3\\n\\n      - name: Set up Cloud SDK\\n        uses: google-github-actions/setup-gcloud@v1\\n        with:\\n          project_id: ${{{{ secrets.GCP_PROJECT_ID }}}}\\n          service_account_key: ${{{{ secrets.GCP_SA_KEY }}}}\\n\\n      - name: Configure Docker\\n        run: |\\n          gcloud auth configure-docker ${{{{ env.GAR_LOCATION }}}}\\n\\n      - name: Create Artifact Registry Repository\\n        run: |\\n          gcloud artifacts repositories create cicdai-repo \\\\\\n            --repository-format=docker \\\\\\n            --location=${{{{ env.GCP_REGION }}}} \\\\\\n            --description=\\\"Docker repository\\\" || true\\n\\n      - name: Build and Push\\n        run: |\\n          docker build -t ${{{{ env.GAR_LOCATION }}}}/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/IMAGE_NAME:${{{{ github.sha }}}} .\\n          docker push ${{{{ env.GAR_LOCATION }}}}/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/IMAGE_NAME:${{{{ github.sha }}}}\\n\\n      - name: Deploy to Cloud Run\\n        uses: google-github-actions/deploy-cloudrun@v1\\n        with:\\n          service: SERVICE_NAME\\n          image: ${{{{ env.GAR_LOCATION }}}}/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/IMAGE_NAME:${{{{ github.sha }}}}\\n          region: ${{{{ env.GCP_REGION }}}}\\n          flags: --port=PORT --allow-unauthenticated"
     }},
     "environment_variables": [
         {{
