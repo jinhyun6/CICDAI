@@ -92,15 +92,27 @@ IMPORTANT for services detection:
 - Service names should be descriptive like "frontend", "backend", "api", "web", etc.
 - Do NOT use generic names like "main-service" or "unknown"
 
+CRITICAL: If you see /frontend and /backend folders:
+- This is a multi-service project
+- Create backend/Dockerfile for the backend service
+- Create frontend/Dockerfile for the frontend service
+- The workflow should build and deploy BOTH services separately
+
 1. An optimized Dockerfile (or multiple if needed)
+   - MUST copy actual project files (COPY . . or similar)
+   - MUST NOT create test files or dummy applications
+   - For Python/FastAPI: install requirements.txt and run actual main.py
+   - For Node/Vue: install package.json dependencies and build/serve the actual app
+   - If frontend and backend exist in separate folders, create separate Dockerfiles
 2. A GitHub Actions workflow file for CI/CD that:
-   - Builds and tests the application
-   - Creates Docker images using Google Artifact Registry (NOT Container Registry/gcr.io)
-   - Deploys to Google Cloud Run
-   - Includes proper error handling and rollback
-   - MUST use format: {region}-docker.pkg.dev/{project}/cicdai-repo/{image}
-   - MUST create Artifact Registry repository if it doesn't exist
-   - MUST authenticate with: gcloud auth configure-docker {region}-docker.pkg.dev
+   - CRITICAL: Must use Google Artifact Registry, NOT Container Registry (gcr.io)
+   - CRITICAL: Use secrets for all values: ${{{{ secrets.GCP_PROJECT_ID }}}}, ${{{{ secrets.GCP_REGION }}}} 
+   - CRITICAL: Region format MUST be: ${{{{ secrets.GCP_REGION }}}}-docker.pkg.dev
+   - Must trigger on push to main branch AND manual workflow_dispatch
+   - Must authenticate with: gcloud auth configure-docker REGION-docker.pkg.dev
+   - Must create Artifact Registry repository if not exists
+   - Must use this exact image format: REGION-docker.pkg.dev/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/SERVICE:${{{{ github.sha }}}}
+   - Must have proper newlines at end of file
 
 Please respond with a JSON object in this exact format:
 {{
@@ -127,7 +139,7 @@ Please respond with a JSON object in this exact format:
     ],
     "github_workflow": {{
         "path": ".github/workflows/deploy.yml",
-        "content": "name: Deploy to Cloud Run\\n\\non:\\n  push:\\n    branches: [ main ]\\n\\nenv:\\n  GCP_REGION: ${{{{ secrets.GCP_REGION }}}}\\n  GAR_LOCATION: ${{{{ secrets.GCP_REGION }}}}-docker.pkg.dev\\n\\njobs:\\n  deploy:\\n    runs-on: ubuntu-latest\\n    steps:\\n      - uses: actions/checkout@v3\\n\\n      - name: Set up Cloud SDK\\n        uses: google-github-actions/setup-gcloud@v1\\n        with:\\n          project_id: ${{{{ secrets.GCP_PROJECT_ID }}}}\\n          service_account_key: ${{{{ secrets.GCP_SA_KEY }}}}\\n\\n      - name: Configure Docker\\n        run: |\\n          gcloud auth configure-docker ${{{{ env.GAR_LOCATION }}}}\\n\\n      - name: Create Artifact Registry Repository\\n        run: |\\n          gcloud artifacts repositories create cicdai-repo \\\\\\n            --repository-format=docker \\\\\\n            --location=${{{{ env.GCP_REGION }}}} \\\\\\n            --description=\\\"Docker repository\\\" || true\\n\\n      - name: Build and Push\\n        run: |\\n          docker build -t ${{{{ env.GAR_LOCATION }}}}/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/IMAGE_NAME:${{{{ github.sha }}}} .\\n          docker push ${{{{ env.GAR_LOCATION }}}}/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/IMAGE_NAME:${{{{ github.sha }}}}\\n\\n      - name: Deploy to Cloud Run\\n        uses: google-github-actions/deploy-cloudrun@v1\\n        with:\\n          service: SERVICE_NAME\\n          image: ${{{{ env.GAR_LOCATION }}}}/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/IMAGE_NAME:${{{{ github.sha }}}}\\n          region: ${{{{ env.GCP_REGION }}}}\\n          flags: --port=PORT --allow-unauthenticated"
+        "content": "FULL GITHUB ACTIONS WORKFLOW HERE - Must be a complete valid workflow that uses Artifact Registry"
     }},
     "environment_variables": [
         {{
