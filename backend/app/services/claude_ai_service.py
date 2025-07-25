@@ -64,10 +64,17 @@ class ClaudeAIService:
         
         # 주요 파일들의 내용을 포함한 프롬프트 생성
         files_info = []
+        important_files = [
+            'package.json', 'requirements.txt', 'main.py', 'app.py', 'index.js',
+            'docker-compose.yml', 'Dockerfile', '.env.example', 'config', 'settings'
+        ]
+        
         for path, content in repo_files_content.items():
-            # 중요한 파일들만 포함 (package.json, requirements.txt, main.py 등)
-            if any(name in path for name in ['package.json', 'requirements.txt', 'main.py', 'app.py', 'index.js']):
-                files_info.append(f"=== {path} ===\n{content[:1000]}...\n")  # 처음 1000자만
+            # 중요한 파일들만 포함
+            if any(name in path for name in important_files):
+                # 파일 크기에 따라 적절히 조절
+                max_chars = 3000 if 'package.json' in path or 'requirements.txt' in path else 2000
+                files_info.append(f"=== {path} ===\n{content[:max_chars]}\n")
         
         system_prompt = """You are a DevOps expert specializing in containerization and CI/CD pipelines. 
         You analyze code repositories and generate optimized Dockerfiles and GitHub Actions workflows."""
@@ -80,49 +87,40 @@ Repository structure:
 Key files content:
 {''.join(files_info)}
 
-Based on this analysis, please generate:
+Based on this analysis, generate CI/CD files following these steps:
 
-IMPORTANT for services detection:
-- If you find package.json with Vue dependencies, it's a "frontend" service with type "vue"
-- If you find package.json with React dependencies, it's a "frontend" service with type "react"  
-- If you find requirements.txt with FastAPI, it's a "backend" service with type "fastapi"
-- If you find requirements.txt with Django, it's a "backend" service with type "django"
-- If you find main.py or app.py, it's likely a Python backend service
-- If you find index.js or server.js, it's likely a Node.js backend service
-- Service names should be descriptive like "frontend", "backend", "api", "web", etc.
-- Do NOT use generic names like "main-service" or "unknown"
+STEP 1 - Analyze the project:
+- Identify project type (single service, multi-service, monorepo)
+- Detect technologies (Vue/React/Angular for frontend, FastAPI/Django/Express for backend)
+- Find entry points (main.py, app.py, index.js, server.js)
+- Check for existing Docker files or docker-compose.yml
+- Identify environment variables from .env.example or config files
+- Determine ports from code (e.g., app.listen(3000), uvicorn --port 8000)
 
-CRITICAL: If you see /frontend and /backend folders:
-- This is a multi-service project
-- Create backend/Dockerfile for the backend service
-- Create frontend/Dockerfile for the frontend service
-- The workflow should build and deploy BOTH services separately
+STEP 2 - Generate Dockerfiles:
+Based on what you found:
+- For Python: Use appropriate base image, install dependencies from requirements.txt, copy code, run with detected command
+- For Node.js: Use node:18-alpine, install from package.json, handle build steps if needed
+- For static sites: Multi-stage build with nginx
+- MUST use actual project structure, NOT create dummy files
 
-1. An optimized Dockerfile (or multiple if needed)
-   - MUST copy actual project files (COPY . . or similar)
-   - MUST NOT create test files or dummy applications
-   - For Python/FastAPI: install requirements.txt and run actual main.py
-   - For Node/Vue: install package.json dependencies and build/serve the actual app
-   - If frontend and backend exist in separate folders, create separate Dockerfiles
-2. A GitHub Actions workflow file for CI/CD that:
-   - CRITICAL: Must use Google Artifact Registry, NOT Container Registry (gcr.io)
-   - CRITICAL: Use secrets for all values: ${{{{ secrets.GCP_PROJECT_ID }}}}, ${{{{ secrets.GCP_REGION }}}} 
-   - CRITICAL: Region format MUST be: ${{{{ secrets.GCP_REGION }}}}-docker.pkg.dev
-   - CRITICAL: For auth use: google-github-actions/auth@v1 with credentials_json: ${{{{ secrets.GCP_SA_KEY }}}}
-   - DO NOT use workload_identity_provider, use credentials_json instead
-   - Must trigger on push to main branch AND manual workflow_dispatch
-   - Must authenticate with: gcloud auth configure-docker REGION-docker.pkg.dev
-   - Must create Artifact Registry repository if not exists
-   - Must use this exact image format: REGION-docker.pkg.dev/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/SERVICE:${{{{ github.sha }}}}
-   - MUST include Cloud Run deployment steps after building images
-   - Use google-github-actions/deploy-cloudrun@v1 for deployment
-   - Deploy backend service with name: cicdai-backend, port: 8000, allow-unauthenticated
-   - Deploy frontend service with name: cicdai-frontend, port: 80, allow-unauthenticated
-   - Must include env_vars for backend (DATABASE_URL, REDIS_URL, etc from secrets)
-   - Must specify memory: 512Mi and cpu: 1 for each service
-   - Do NOT add step to enable APIs (should be done beforehand)
-   - Add output to show deployment URLs
-   - Must have proper newlines at end of file
+STEP 3 - Generate GitHub Actions workflow:
+The workflow MUST:
+1. Understand the Dockerfiles you just created and use their locations
+2. Handle all services found in the project
+3. Use Google Artifact Registry: ${{{{ secrets.GCP_REGION }}}}-docker.pkg.dev
+4. Auth with: credentials_json: ${{{{ secrets.GCP_SA_KEY }}}}
+5. For each service:
+   - Build using the Dockerfile path you created
+   - Push to: ${{{{ secrets.GCP_REGION }}}}-docker.pkg.dev/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/SERVICE_NAME:${{{{ github.sha }}}}
+   - Deploy to Cloud Run with appropriate settings:
+     - Service name based on folder/service type
+     - Port based on what you found in the code
+     - Memory/CPU based on service type (frontend: 256Mi, backend: 512Mi)
+     - Environment variables based on what the service needs
+6. Output deployment URLs using steps.[step-id].outputs.url
+
+CRITICAL: The workflow must match the Dockerfiles you create. If you create backend/Dockerfile, the workflow must build from ./backend. If you create separate services, deploy them separately.
 
 Please respond with a JSON object in this exact format:
 {{

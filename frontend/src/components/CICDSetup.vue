@@ -30,13 +30,48 @@
       </div>
     </div>
 
-    <!-- Step 3: 배포 설정 -->
+    <!-- Step 3: 워크플로우 생성 방법 선택 -->
     <div class="setup-step" :class="{ active: currentStep >= 3 }">
-      <h3>3. 배포 설정</h3>
+      <h3>3. 워크플로우 생성 방법 선택</h3>
       <div v-if="currentStep >= 3" class="step-content">
+        <div class="workflow-method-selection">
+          <label class="method-option">
+            <input type="radio" v-model="workflowMethod" value="ai" @change="onWorkflowMethodChange">
+            <div class="method-content">
+              <h4>🤖 AI 자동 생성</h4>
+              <p>Claude AI가 프로젝트를 분석하여 최적화된 워크플로우를 자동으로 생성합니다.</p>
+            </div>
+          </label>
+          <label class="method-option">
+            <input type="radio" v-model="workflowMethod" value="manual" @change="onWorkflowMethodChange">
+            <div class="method-content">
+              <h4>📝 수동 입력</h4>
+              <p>직접 작성한 GitHub Actions 워크플로우 코드를 입력합니다.</p>
+            </div>
+          </label>
+        </div>
+        
+        <!-- 수동 입력 영역 -->
+        <div v-if="workflowMethod === 'manual'" class="manual-workflow-input">
+          <h4>GitHub Actions 워크플로우 코드 입력</h4>
+          <textarea 
+            v-model="manualWorkflowContent" 
+            placeholder="name: Deploy to Cloud Run&#10;&#10;on:&#10;  push:&#10;    branches:&#10;      - main&#10;..."
+            rows="20"
+            @input="checkStep3Complete"
+          ></textarea>
+          <p class="help-text">※ .github/workflows/deploy.yml 파일에 저장될 내용을 입력하세요.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: 배포 설정 -->
+    <div class="setup-step" :class="{ active: currentStep >= 4 }">
+      <h3>4. 배포 설정</h3>
+      <div v-if="currentStep >= 4" class="step-content">
         <div class="form-group">
           <label>서비스 이름</label>
-          <input v-model="serviceName" type="text" placeholder="my-app" @input="checkStep3Complete">
+          <input v-model="serviceName" type="text" placeholder="my-app" @input="checkStep4Complete">
         </div>
         
         <div class="form-group">
@@ -52,11 +87,11 @@
           <label>배포 타입</label>
           <div class="deploy-types">
             <label class="deploy-type">
-              <input type="radio" v-model="deployType" value="cloudrun" @change="checkStep3Complete">
+              <input type="radio" v-model="deployType" value="cloudrun" @change="checkStep4Complete">
               <span>Cloud Run</span>
             </label>
             <label class="deploy-type">
-              <input type="radio" v-model="deployType" value="appengine" @change="checkStep3Complete">
+              <input type="radio" v-model="deployType" value="appengine" @change="checkStep4Complete">
               <span>App Engine</span>
             </label>
           </div>
@@ -64,10 +99,10 @@
       </div>
     </div>
 
-    <!-- Step 4: 환경변수 및 파일 설정 -->
-    <div class="setup-step" :class="{ active: currentStep >= 4 }">
-      <h3>4. 환경변수 및 파일 설정</h3>
-      <div v-if="currentStep >= 4" class="step-content">
+    <!-- Step 5: 환경변수 및 파일 설정 -->
+    <div class="setup-step" :class="{ active: currentStep >= 5 }">
+      <h3>5. 환경변수 및 파일 설정</h3>
+      <div v-if="currentStep >= 5" class="step-content">
         <div class="env-vars">
           <div v-for="(envVar, index) in environmentVariables" :key="index" class="env-var">
             <input v-model="envVar.key" placeholder="KEY" />
@@ -98,7 +133,7 @@
     </div>
 
     <!-- 실행 버튼 -->
-    <div v-if="currentStep >= 4" class="action-buttons">
+    <div v-if="currentStep >= 5" class="action-buttons">
       <button @click="executeSetup" class="btn-execute" :disabled="!canExecute">
         🚀 CI/CD 설정 시작
       </button>
@@ -211,6 +246,8 @@ const deployType = ref('cloudrun')
 const environmentVariables = ref([])
 const setupStatus = ref(null)
 const fileOverwriteOption = ref('skip') // 기본값: 기존 파일 유지
+const workflowMethod = ref('ai') // 'ai' or 'manual'
+const manualWorkflowContent = ref('')
 
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(async () => {
@@ -373,10 +410,24 @@ const onProjectSelect = () => {
   }
 }
 
+// 워크플로우 방법 변경
+const onWorkflowMethodChange = () => {
+  checkStep3Complete()
+}
+
 // Step 3 완료 체크
 const checkStep3Complete = () => {
-  if (serviceName.value && deployType.value) {
+  if (workflowMethod.value === 'ai') {
     currentStep.value = 4
+  } else if (workflowMethod.value === 'manual' && manualWorkflowContent.value.trim()) {
+    currentStep.value = 4
+  }
+}
+
+// Step 4 완료 체크
+const checkStep4Complete = () => {
+  if (serviceName.value && deployType.value) {
+    currentStep.value = 5
   }
 }
 
@@ -391,9 +442,15 @@ const removeEnvVar = (index) => {
 
 // 실행 가능 여부
 const canExecute = computed(() => {
-  return selectedRepo.value && 
-         selectedProject.value && 
-         serviceName.value
+  const baseRequirements = selectedRepo.value && 
+                          selectedProject.value && 
+                          serviceName.value
+  
+  if (workflowMethod.value === 'manual') {
+    return baseRequirements && manualWorkflowContent.value.trim()
+  }
+  
+  return baseRequirements
 })
 
 // CI/CD 설정 실행 (AI 생성 파일 커밋)
@@ -413,9 +470,41 @@ const executeSetup = async () => {
   try {
     const token = localStorage.getItem('jwt_token')
     
-    // Step 0: 저장소 분석 (아직 분석하지 않은 경우)
-    if (!aiAnalysisResult.value || !aiAnalysisResult.value.generated_files) {
-      await analyzeRepository()
+    // 수동 워크플로우 입력인 경우
+    if (workflowMethod.value === 'manual') {
+      setupStatus.value.steps = [
+        { name: '수동 워크플로우 준비', status: 'in-progress' },
+        { name: 'GitHub에 파일 커밋', status: 'pending' },
+        { name: 'GitHub Secrets 설정', status: 'pending' },
+        { name: 'GCP 서비스 계정 생성', status: 'pending' },
+      ]
+      
+      // 수동 워크플로우를 사용하여 generated_files 형식 생성
+      const manualGeneratedFiles = {
+        dockerfiles: [], // 수동 모드에서는 Dockerfile 생성 안 함
+        workflow: {
+          path: '.github/workflows/deploy.yml',
+          content: manualWorkflowContent.value
+        }
+      }
+      
+      aiAnalysisResult.value = {
+        generated_files: manualGeneratedFiles,
+        ai_analysis: {
+          analysis: {
+            project_type: 'manual',
+            services: ['custom']
+          }
+        }
+      }
+      
+      setupStatus.value.steps[0].status = 'completed'
+    } else {
+      // AI 분석 모드
+      // Step 0: 저장소 분석 (아직 분석하지 않은 경우)
+      if (!aiAnalysisResult.value || !aiAnalysisResult.value.generated_files) {
+        await analyzeRepository()
+      }
     }
     
     setupStatus.value.steps[0].status = 'completed'
@@ -549,10 +638,10 @@ const executeSetup = async () => {
   }
 }
 
-// Step 3 완료 시 Step 4로
+// Step 4 완료 시 Step 5로
 const onDeployTypeSelect = () => {
   if (serviceName.value) {
-    currentStep.value = 4
+    currentStep.value = 5
   }
 }
 
@@ -1028,5 +1117,104 @@ const getRepoName = (repoFullName) => {
 .ai-generated-results .generated-files h6 {
   margin: 0.5rem 0;
   color: #495057;
+}
+
+/* 워크플로우 방법 선택 */
+.workflow-method-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.method-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.method-option:hover {
+  border-color: #3498db;
+  background: #f8f9fa;
+}
+
+.method-option input[type="radio"] {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.method-option input[type="radio"]:checked ~ .method-content {
+  color: #2c3e50;
+}
+
+.method-option input[type="radio"]:checked {
+  accent-color: #3498db;
+}
+
+.method-content {
+  flex: 1;
+}
+
+.method-content h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  color: #495057;
+}
+
+.method-content p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.method-option:has(input:checked) {
+  border-color: #3498db;
+  background: #f0f8ff;
+}
+
+/* 수동 워크플로우 입력 */
+.manual-workflow-input {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.manual-workflow-input h4 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.manual-workflow-input textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  resize: vertical;
+  min-height: 400px;
+}
+
+.manual-workflow-input textarea:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.manual-workflow-input .help-text {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #6c757d;
 }
 </style>
