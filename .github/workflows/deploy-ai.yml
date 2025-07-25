@@ -36,16 +36,19 @@ jobs:
             --location=${{ secrets.GCP_REGION }} \
             --quiet || true
 
-      # Deploy Frontend to Vercel using their action
+      # Deploy Frontend to Vercel
       - name: Deploy Frontend to Vercel
         id: deploy-frontend
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          working-directory: ./frontend
-          vercel-args: '--prod'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cd frontend
+          npm install -g vercel@latest
+          
+          # Get production URL from Vercel
+          FRONTEND_URL=$(vercel --token=$VERCEL_TOKEN --prod --yes 2>&1 | tail -1)
+          echo "preview-url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+          echo "Frontend deployed to: $FRONTEND_URL"
 
       # Build and Deploy Backend to Cloud Run
       - name: Build Backend Docker Image
@@ -102,13 +105,10 @@ jobs:
 
       # Redeploy Frontend with updated environment variable
       - name: Redeploy Frontend to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          working-directory: ./frontend
-          vercel-args: '--prod --force'
+        working-directory: ./frontend
+        run: |
+          # Force new deployment with updated env vars
+          vercel --prod --force --token=${{ secrets.VERCEL_TOKEN }}
 
       # Output deployment URLs
       - name: Show Deployment URLs
