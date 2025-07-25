@@ -36,18 +36,7 @@ jobs:
             --location=${{ secrets.GCP_REGION }} \
             --quiet || true
 
-      # Deploy Frontend to Vercel using their action
-      - name: Deploy Frontend to Vercel
-        id: deploy-frontend
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          working-directory: ./frontend
-          vercel-args: '--prod'
-
-      # Build and Deploy Backend to Cloud Run
+      # Build and Deploy Backend to Cloud Run FIRST
       - name: Build Backend Docker Image
         run: |
           docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }} ./backend
@@ -80,35 +69,35 @@ jobs:
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-            FRONTEND_URL=${{ steps.deploy-frontend.outputs.preview-url }}
+            FRONTEND_URL=https://cicdai-frontend.vercel.app
+            ENVIRONMENT=production
 
-      # Update Vercel Environment Variables and Redeploy
-      - name: Update Vercel Environment Variables
-        run: |
-          # Delete existing VITE_API_URL if exists
-          curl -X DELETE "https://api.vercel.com/v9/projects/${{ secrets.VERCEL_PROJECT_ID }}/env/VITE_API_URL" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" || true
-          
-          # Create new VITE_API_URL
-          curl -X POST "https://api.vercel.com/v10/projects/${{ secrets.VERCEL_PROJECT_ID }}/env" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "key": "VITE_API_URL",
-              "value": "${{ steps.deploy-backend.outputs.url }}",
-              "type": "plain",
-              "target": ["production", "preview", "development"]
-            }'
-
-      # Redeploy Frontend with updated environment variable
-      - name: Redeploy Frontend to Vercel
-        uses: amondnet/vercel-action@v25
+      # Deploy Frontend to Vercel with Backend URL
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          working-directory: ./frontend
-          vercel-args: '--prod --force'
+          node-version: '20'
+
+      - name: Build Frontend with Backend URL
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: ${{ steps.deploy-backend.outputs.url }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy Frontend to Vercel
+        id: deploy-frontend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cd frontend
+          npm install -g vercel@latest
+          
+          # Deploy the pre-built dist folder
+          FRONTEND_URL=$(vercel --token=$VERCEL_TOKEN --prod --yes 2>&1 | tail -1)
+          echo "preview-url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+          echo "Frontend deployed to: $FRONTEND_URL"
 
       # Output deployment URLs
       - name: Show Deployment URLs
