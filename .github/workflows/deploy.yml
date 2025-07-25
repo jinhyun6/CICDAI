@@ -1,0 +1,52 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  BACKEND_IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cicdai-repo/backend
+  FRONTEND_IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cicdai-repo/frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+        service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker for Artifact Registry
+      run: |
+        gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
+
+    - name: Create Artifact Registry Repository
+      run: |
+        gcloud artifacts repositories create cicdai-repo \
+          --repository-format=docker \
+          --location=${{ secrets.GCP_REGION }} \
+          --quiet || true
+
+    - name: Build and Push Backend
+      working-directory: ./backend
+      run: |
+        docker build -t ${BACKEND_IMAGE}:${{ github.sha }} .
+        docker push ${BACKEND_IMAGE}:${{ github.sha }}
+
+    - name: Build and Push Frontend
+      working-directory: ./frontend
+      run: |
+        docker build -t ${FRONTEND_IMAGE}:${{ github.sha }} .
+        docker push ${FRONTEND_IMAGE}:${{ github.sha }}
