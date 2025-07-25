@@ -30,11 +30,14 @@ if os.getenv("ENVIRONMENT", "development") == "development":
         "http://localhost:8080"
     ])
 
-# credentials=True일 때는 wildcard(*)를 사용할 수 없음
+# 프로덕션 환경에서는 모든 origin 허용 (디버깅용)
+if os.getenv("ENVIRONMENT") == "production":
+    origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=True if origins != ["*"] else False,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
@@ -59,3 +62,15 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/debug/cors")
+async def debug_cors():
+    return {
+        "environment": os.getenv("ENVIRONMENT", "not set"),
+        "allowed_origins": origins,
+        "cors_settings": {
+            "allow_credentials": True if origins != ["*"] else False,
+            "allow_methods": ["*"],
+            "allow_headers": ["*"]
+        }
+    }
