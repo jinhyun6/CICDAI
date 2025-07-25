@@ -3,7 +3,8 @@ import { API_BASE_URL } from './api'
 
 // Axios 기본 설정
 axios.defaults.baseURL = API_BASE_URL
-axios.defaults.withCredentials = true
+// 프로덕션에서는 withCredentials를 사용하지 않음 (CORS 와일드카드 때문)
+axios.defaults.withCredentials = false
 
 // Request 인터셉터
 axios.interceptors.request.use(

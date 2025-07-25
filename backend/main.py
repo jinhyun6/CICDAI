@@ -30,14 +30,18 @@ if os.getenv("ENVIRONMENT", "development") == "development":
         "http://localhost:8080"
     ])
 
-# 프로덕션 환경에서는 모든 origin 허용 (디버깅용)
+# 프로덕션 환경에서는 모든 origin 허용
 if os.getenv("ENVIRONMENT") == "production":
+    # 정규식 패턴 사용
     origins = ["*"]
+    allow_credentials = False
+else:
+    allow_credentials = True
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True if origins != ["*"] else False,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
