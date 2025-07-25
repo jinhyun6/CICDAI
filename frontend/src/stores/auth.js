@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import { API_BASE_URL } from '../config/api'
 
+// axios 기본 설정
+axios.defaults.withCredentials = true
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
