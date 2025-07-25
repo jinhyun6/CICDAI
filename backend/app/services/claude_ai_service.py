@@ -116,8 +116,11 @@ CRITICAL: If you see /frontend and /backend folders:
    - Must use this exact image format: REGION-docker.pkg.dev/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/SERVICE:${{{{ github.sha }}}}
    - MUST include Cloud Run deployment steps after building images
    - Use google-github-actions/deploy-cloudrun@v1 for deployment
-   - Deploy backend service with name: cicdai-backend
-   - Deploy frontend service with name: cicdai-frontend
+   - Deploy backend service with name: cicdai-backend, port: 8000, allow-unauthenticated
+   - Deploy frontend service with name: cicdai-frontend, port: 80, allow-unauthenticated
+   - Must include env_vars for backend (DATABASE_URL, REDIS_URL, etc from secrets)
+   - Must specify memory: 512Mi and cpu: 1 for each service
+   - Add step to enable Cloud Run API: gcloud services enable run.googleapis.com
    - Add output to show deployment URLs
    - Must have proper newlines at end of file
 

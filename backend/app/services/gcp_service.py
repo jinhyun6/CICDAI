@@ -150,7 +150,8 @@ class GCPService:
             'secretmanager.googleapis.com',
             'containerregistry.googleapis.com',
             'cloudresourcemanager.googleapis.com',  # 프로젝트 목록 조회용
-            'iam.googleapis.com'  # 서비스 계정 관리용
+            'iam.googleapis.com',  # 서비스 계정 관리용
+            'compute.googleapis.com'  # Cloud Run에 필요
         ]
         
         results = {}
