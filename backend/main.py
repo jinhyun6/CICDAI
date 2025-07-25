@@ -73,7 +73,7 @@ async def debug_cors():
         "environment": os.getenv("ENVIRONMENT", "not set"),
         "allowed_origins": origins,
         "cors_settings": {
-            "allow_credentials": True if origins != ["*"] else False,
+            "allow_credentials": allow_credentials if 'allow_credentials' in globals() else True,
             "allow_methods": ["*"],
             "allow_headers": ["*"]
         }
