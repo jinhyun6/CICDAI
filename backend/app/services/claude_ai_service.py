@@ -108,6 +108,8 @@ CRITICAL: If you see /frontend and /backend folders:
    - CRITICAL: Must use Google Artifact Registry, NOT Container Registry (gcr.io)
    - CRITICAL: Use secrets for all values: ${{{{ secrets.GCP_PROJECT_ID }}}}, ${{{{ secrets.GCP_REGION }}}} 
    - CRITICAL: Region format MUST be: ${{{{ secrets.GCP_REGION }}}}-docker.pkg.dev
+   - CRITICAL: For auth use: google-github-actions/auth@v1 with credentials_json: ${{{{ secrets.GCP_SA_KEY }}}}
+   - DO NOT use workload_identity_provider, use credentials_json instead
    - Must trigger on push to main branch AND manual workflow_dispatch
    - Must authenticate with: gcloud auth configure-docker REGION-docker.pkg.dev
    - Must create Artifact Registry repository if not exists
