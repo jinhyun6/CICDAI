@@ -120,7 +120,7 @@ CRITICAL: If you see /frontend and /backend folders:
    - Deploy frontend service with name: cicdai-frontend, port: 80, allow-unauthenticated
    - Must include env_vars for backend (DATABASE_URL, REDIS_URL, etc from secrets)
    - Must specify memory: 512Mi and cpu: 1 for each service
-   - Add step to enable Cloud Run API: gcloud services enable run.googleapis.com
+   - Do NOT add step to enable APIs (should be done beforehand)
    - Add output to show deployment URLs
    - Must have proper newlines at end of file
 

@@ -66,7 +66,8 @@ class GCPService:
             'roles/storage.admin',       # Cloud Storage (이미지 저장)
             'roles/cloudbuild.builds.builder',  # Cloud Build
             'roles/artifactregistry.admin',     # Artifact Registry
-            'roles/iam.serviceAccountUser'      # 서비스 계정 사용
+            'roles/iam.serviceAccountUser',     # 서비스 계정 사용
+            'roles/serviceusage.serviceUsageConsumer'  # API 사용 권한
         ]
         
         try:
