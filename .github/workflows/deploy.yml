@@ -36,15 +36,94 @@ jobs:
             --location=${{ secrets.GCP_REGION }} \
             --quiet || true
 
-      # Backend Build and Deploy
+      # Build all images first
       - name: Build Backend Docker Image
         run: |
           docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }} ./backend
 
+      - name: Build Frontend Docker Image
+        run: |
+          # Create Dockerfile if it doesn't exist
+          if [ ! -f frontend/Dockerfile ]; then
+            cat > frontend/Dockerfile << 'EOF'
+          # Build stage
+          FROM node:18-alpine as builder
+          
+          WORKDIR /app
+          
+          # Copy package files
+          COPY package*.json ./
+          
+          # Install dependencies
+          RUN npm ci
+          
+          # Copy source code
+          COPY . .
+          
+          # Build the application
+          RUN npm run build
+          
+          # Production stage
+          FROM nginx:alpine
+          
+          # Copy built files
+          COPY --from=builder /app/dist /usr/share/nginx/html
+          
+          # Add nginx configuration for SPA - Cloud Run needs port 8080
+          RUN echo 'server { \
+              listen 8080; \
+              server_name _; \
+              root /usr/share/nginx/html; \
+              index index.html; \
+              location / { \
+                  try_files $uri $uri/ /index.html; \
+              } \
+              location /api { \
+                  return 404; \
+              } \
+              location /health { \
+                  access_log off; \
+                  return 200 "healthy\n"; \
+                  add_header Content-Type text/plain; \
+              } \
+          }' > /etc/nginx/conf.d/default.conf && \
+          sed -i 's/listen       80;/listen       8080;/g' /etc/nginx/conf.d/default.conf
+          
+          # Cloud Run expects port 8080
+          EXPOSE 8080
+          
+          CMD ["nginx", "-g", "daemon off;"]
+          EOF
+          fi
+          
+          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }} ./frontend
+
+      # Push all images
       - name: Push Backend Image
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }}
 
+      - name: Push Frontend Image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
+
+      # Deploy Frontend first (no dependencies)
+      - name: Deploy Frontend to Cloud Run
+        id: deploy-frontend
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          service: cicdai-frontend
+          image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
+          region: ${{ secrets.GCP_REGION }}
+          flags: |
+            --allow-unauthenticated
+            --port=8080
+            --memory=512Mi
+            --cpu=1
+            --max-instances=10
+            --min-instances=0
+
+      # Deploy Backend with Frontend URL
       - name: Deploy Backend to Cloud Run
         id: deploy-backend
         uses: google-github-actions/deploy-cloudrun@v1
@@ -71,90 +150,14 @@ jobs:
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
             FRONTEND_URL=${{ steps.deploy-frontend.outputs.url }}
 
-      # Frontend Build and Deploy
-      - name: Create Frontend Dockerfile
+      # Update Frontend with Backend URL (create env.js or update config)
+      - name: Create Frontend Configuration
         run: |
-          cat > frontend/Dockerfile << 'EOF'
-          # Build stage
-          FROM node:18-alpine as builder
-          
-          WORKDIR /app
-          
-          # Copy package files
-          COPY package*.json ./
-          
-          # Install dependencies
-          RUN npm ci
-          
-          # Copy source code
-          COPY . .
-          
-          # Set backend URL for build
-          ARG VITE_API_URL
-          ENV VITE_API_URL=$VITE_API_URL
-          
-          # Build the application
-          RUN npm run build
-          
-          # Production stage
-          FROM nginx:alpine
-          
-          # Copy built files
-          COPY --from=builder /app/dist /usr/share/nginx/html
-          
-          # Add nginx configuration for SPA
-          RUN echo 'server { \
-              listen 80; \
-              location / { \
-                  root /usr/share/nginx/html; \
-                  index index.html; \
-                  try_files $uri $uri/ /index.html; \
-              } \
-              location /api { \
-                  return 404; \
-              } \
-          }' > /etc/nginx/conf.d/default.conf
-          
-          EXPOSE 80
-          
-          CMD ["nginx", "-g", "daemon off;"]
-          EOF
-
-      - name: Build Frontend Docker Image
-        run: |
-          docker build \
-            --build-arg VITE_API_URL=${{ steps.deploy-backend.outputs.url }} \
-            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }} \
-            ./frontend
-
-      - name: Push Frontend Image
-        run: |
-          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
-
-      - name: Deploy Frontend to Cloud Run
-        id: deploy-frontend
-        uses: google-github-actions/deploy-cloudrun@v1
-        with:
-          service: cicdai-frontend
-          image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
-          region: ${{ secrets.GCP_REGION }}
-          flags: |
-            --allow-unauthenticated
-            --port=80
-            --memory=256Mi
-            --cpu=1
-            --max-instances=10
-            --min-instances=0
-
-      # Update Backend with Frontend URL
-      - name: Update Backend with Frontend URL
-        uses: google-github-actions/deploy-cloudrun@v1
-        with:
-          service: cicdai-backend
-          image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }}
-          region: ${{ secrets.GCP_REGION }}
-          flags: |
-            --update-env-vars FRONTEND_URL=${{ steps.deploy-frontend.outputs.url }}
+          echo "Frontend deployed at: ${{ steps.deploy-frontend.outputs.url }}"
+          echo "Backend deployed at: ${{ steps.deploy-backend.outputs.url }}"
+          echo ""
+          echo "IMPORTANT: Update your frontend configuration to use the backend URL:"
+          echo "VITE_API_URL=${{ steps.deploy-backend.outputs.url }}"
 
       # Output deployment URLs
       - name: Show Deployment URLs
@@ -164,7 +167,7 @@ jobs:
           echo "Backend URL: ${{ steps.deploy-backend.outputs.url }}"
           echo ""
           echo "Next steps:"
-          echo "1. Update your frontend to use the backend URL"
+          echo "1. Update your frontend .env to use the backend URL"
           echo "2. Configure custom domains if needed"
           echo "3. Set up monitoring and alerts"
 
