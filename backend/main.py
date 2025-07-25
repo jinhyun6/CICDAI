@@ -15,16 +15,29 @@ origins = settings.ALLOWED_ORIGINS.copy()
 if settings.FRONTEND_URL:
     origins.append(settings.FRONTEND_URL)
 
-# 개발 중에는 모든 origin 허용 (프로덕션에서는 제거)
-if os.getenv("ENVIRONMENT", "development") == "development":
-    origins = ["*"]
+# Vercel 도메인 추가
+origins.extend([
+    "https://cicdai-frontend.vercel.app",
+    "https://frontend-*.vercel.app",
+    "https://*.vercel.app"
+])
 
+# 개발 중에는 localhost 추가
+if os.getenv("ENVIRONMENT", "development") == "development":
+    origins.extend([
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:8080"
+    ])
+
+# credentials=True일 때는 wildcard(*)를 사용할 수 없음
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 # 라우터 등록
