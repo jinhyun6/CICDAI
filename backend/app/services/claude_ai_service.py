@@ -114,6 +114,11 @@ CRITICAL: If you see /frontend and /backend folders:
    - Must authenticate with: gcloud auth configure-docker REGION-docker.pkg.dev
    - Must create Artifact Registry repository if not exists
    - Must use this exact image format: REGION-docker.pkg.dev/${{{{ secrets.GCP_PROJECT_ID }}}}/cicdai-repo/SERVICE:${{{{ github.sha }}}}
+   - MUST include Cloud Run deployment steps after building images
+   - Use google-github-actions/deploy-cloudrun@v1 for deployment
+   - Deploy backend service with name: cicdai-backend
+   - Deploy frontend service with name: cicdai-frontend
+   - Add output to show deployment URLs
    - Must have proper newlines at end of file
 
 Please respond with a JSON object in this exact format:
