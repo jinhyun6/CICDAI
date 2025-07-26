@@ -86,9 +86,23 @@ jobs:
           cd frontend
           npm install -g vercel@latest
           
-          # Vercel will use env from vercel.json during build
-          DEPLOYMENT_URL=$(vercel --token=$VERCEL_TOKEN --prod --yes)
+          # Try to deploy to Vercel
+          DEPLOYMENT_OUTPUT=$(vercel --token=$VERCEL_TOKEN --prod --yes 2>&1) || {
+            echo "Vercel deployment failed with output:"
+            echo "$DEPLOYMENT_OUTPUT"
+            
+            # Check if it's rate limit error
+            if echo "$DEPLOYMENT_OUTPUT" | grep -q "api-deployments-free-per-day"; then
+              echo "::warning::Vercel daily deployment limit reached. Using existing deployment."
+              echo "preview-url=https://cicdai-frontend.vercel.app" >> $GITHUB_OUTPUT
+              exit 0
+            else
+              exit 1
+            fi
+          }
           
+          # Extract URL from successful deployment
+          DEPLOYMENT_URL=$(echo "$DEPLOYMENT_OUTPUT" | tail -1)
           echo "Deployment URL: $DEPLOYMENT_URL"
           echo "preview-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
 
