@@ -11,74 +11,22 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# Custom CORS middleware to ensure headers are always present
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    response = await call_next(request)
-    
-    # Get the origin from the request
-    origin = request.headers.get("origin")
-    
-    # In production, allow specific origins
-    if os.getenv("ENVIRONMENT") == "production":
-        allowed_origins = [
-            "https://cicdai-frontend.vercel.app",
-            "https://frontend-*.vercel.app",
-            "http://localhost:5173",
-            "http://localhost:3000"
-        ]
-        
-        # Check if origin is allowed
-        if origin and any(origin.startswith(allowed) for allowed in allowed_origins):
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "false"
-        else:
-            # Allow all origins in production for now
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Credentials"] = "false"
-    else:
-        # Development mode
-        response.headers["Access-Control-Allow-Origin"] = origin or "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-    
-    # Always add these headers
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, X-Requested-With"
-    response.headers["Access-Control-Max-Age"] = "3600"
-    
-    return response
+# CORS 설정
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:8080"
+]
 
-# Still add the standard CORS middleware as backup
-origins = settings.ALLOWED_ORIGINS.copy()
-if settings.FRONTEND_URL:
-    origins.append(settings.FRONTEND_URL)
-
-# Vercel 도메인 추가
-origins.extend([
-    "https://cicdai-frontend.vercel.app",
-    "https://frontend-*.vercel.app",
-    "https://*.vercel.app"
-])
-
-# 개발 중에는 localhost 추가
-if os.getenv("ENVIRONMENT", "development") == "development":
-    origins.extend([
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://localhost:8080"
-    ])
-
-# 프로덕션 환경에서는 모든 origin 허용
-if os.getenv("ENVIRONMENT") == "production":
-    origins = ["*"]
-    allow_credentials = False
-else:
-    allow_credentials = True
+# 환경변수에서 프론트엔드 URL 추가
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    origins.append(frontend_url)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=allow_credentials,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
