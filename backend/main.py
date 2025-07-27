@@ -4,6 +4,7 @@ from fastapi.responses import Response
 from app.api import auth, github, gcp, cicd, deployment, projects, rollback, analyze, github_actions, gcp_setup
 from app.core.config import settings
 import os
+import uvicorn
 
 app = FastAPI(
     title="CI/CD AI",
@@ -12,20 +13,18 @@ app = FastAPI(
 )
 
 # CORS 설정
-origins = [
+allowed_origins = [
     "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:8080"
+    os.getenv("FRONTEND_URL", "") 
 ]
 
-# 환경변수에서 프론트엔드 URL 추가
-frontend_url = os.getenv("FRONTEND_URL")
-if frontend_url:
-    origins.append(frontend_url)
+allowed_origins = [origin for origin in allowed_origins if origin]
+
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,10 +55,14 @@ async def health_check():
 async def debug_cors():
     return {
         "environment": os.getenv("ENVIRONMENT", "not set"),
-        "allowed_origins": origins,
+        "allowed_origins": allowed_origins,
         "cors_settings": {
-            "allow_credentials": allow_credentials if 'allow_credentials' in globals() else True,
+            "allow_credentials": True,
             "allow_methods": ["*"],
             "allow_headers": ["*"]
         }
     }
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
