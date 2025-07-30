@@ -174,7 +174,7 @@ async def github_login(
     # GitHub OAuth 설정 확인
     if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
         print("GitHub OAuth not configured")
-        frontend_url = f"http://localhost:5173/dashboard?error=github_oauth_not_configured"
+        frontend_url = f"{settings.FRONTEND_URL}/dashboard?error=github_oauth_not_configured"
         return RedirectResponse(url=frontend_url)
     
     github_oauth_url = (
@@ -197,7 +197,7 @@ async def github_callback(
     # state에서 사용자 ID 추출
     if not state:
         # 프론트엔드로 에러와 함께 리다이렉트
-        frontend_url = f"http://localhost:5173/dashboard?error=invalid_state"
+        frontend_url = f"{settings.FRONTEND_URL}/dashboard?error=invalid_state"
         return RedirectResponse(url=frontend_url)
     # Access token 요청
     async with httpx.AsyncClient() as client:
@@ -214,7 +214,7 @@ async def github_callback(
     if response.status_code != 200:
         # GitHub OAuth 설정이 없는 경우 등
         print(f"GitHub OAuth failed: {response.status_code}, {response.text}")
-        frontend_url = f"http://localhost:5173/dashboard?error=github_auth_failed"
+        frontend_url = f"{settings.FRONTEND_URL}/dashboard?error=github_auth_failed"
         return RedirectResponse(url=frontend_url)
     
     token_data = response.json()
@@ -257,7 +257,7 @@ async def github_callback(
     await db.refresh(user)
     
     # 프론트엔드로 리다이렉트
-    frontend_url = f"http://localhost:5173/dashboard?from=github&code=success&github_username={user.github_username}"
+    frontend_url = f"{settings.FRONTEND_URL}/dashboard?from=github&code=success&github_username={user.github_username}"
     return RedirectResponse(url=frontend_url)
 
 # Google Cloud OAuth
@@ -280,7 +280,7 @@ async def google_login(
     # Google OAuth 설정 확인
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         print("Google OAuth not configured")
-        frontend_url = f"http://localhost:5173/dashboard?error=google_oauth_not_configured"
+        frontend_url = f"{settings.FRONTEND_URL}/dashboard?error=google_oauth_not_configured"
         return RedirectResponse(url=frontend_url)
     
     google_oauth_url = (
@@ -365,7 +365,7 @@ async def google_callback(
     )
     
     # 프론트엔드로 리다이렉트
-    frontend_url = f"http://localhost:5173/dashboard?from=google&code=success&google_email={google_email}"
+    frontend_url = f"{settings.FRONTEND_URL}/dashboard?from=google&code=success&google_email={google_email}"
     return RedirectResponse(url=frontend_url)
 
 @router.get("/status")
