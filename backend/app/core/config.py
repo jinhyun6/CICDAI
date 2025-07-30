@@ -38,12 +38,22 @@ class Settings(BaseSettings):
     # OAuth - GitHub
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
-    GITHUB_REDIRECT_URI: str = f"{BASE_URL}/api/auth/github/callback"
     
     # OAuth - Google Cloud
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_REDIRECT_URI: str = f"{BASE_URL}/api/auth/google/callback"
+    
+    @property
+    def GITHUB_REDIRECT_URI(self) -> str:
+        """동적으로 리다이렉트 URI 생성"""
+        base_url = os.getenv("BASE_URL", "http://localhost:8000")
+        return f"{base_url}/api/auth/github/callback"
+    
+    @property
+    def GOOGLE_REDIRECT_URI(self) -> str:
+        """동적으로 리다이렉트 URI 생성"""
+        base_url = os.getenv("BASE_URL", "http://localhost:8000")
+        return f"{base_url}/api/auth/google/callback"
     
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost/cicdai"

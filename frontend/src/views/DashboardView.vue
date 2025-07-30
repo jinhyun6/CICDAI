@@ -153,6 +153,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import CICDSetup from '../components/CICDSetup.vue'
 import { projectsAPI } from '../api/projects'
+import { API_BASE_URL } from '../config/api'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -271,7 +272,7 @@ const connectGitHub = async () => {
   // 연결 상태를 localStorage에 저장
   localStorage.setItem('oauth_connecting', 'github')
   
-  const oauthUrl = `http://localhost:8000/api/auth/github/login?token=${token}`
+  const oauthUrl = `${API_BASE_URL}/api/auth/github/login?token=${token}`
   console.log('Redirecting to GitHub OAuth:', oauthUrl)
   window.location.href = oauthUrl
 }
@@ -290,7 +291,7 @@ const connectGCP = async () => {
   // 연결 상태를 localStorage에 저장
   localStorage.setItem('oauth_connecting', 'google')
   
-  const oauthUrl = `http://localhost:8000/api/auth/google/login?token=${token}`
+  const oauthUrl = `${API_BASE_URL}/api/auth/google/login?token=${token}`
   console.log('Redirecting to Google OAuth:', oauthUrl)
   window.location.href = oauthUrl
 }
