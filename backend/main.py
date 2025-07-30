@@ -66,7 +66,10 @@ async def debug_cors():
     return {
         "environment": os.getenv("ENVIRONMENT", "not set"),
         "frontend_url": frontend_url,
-        "allowed_origins": cors_origins,
+        "allowed_origins": allowed_origins,
+        "base_url": os.getenv("BASE_URL", "not set"),
+        "github_redirect_uri": settings.GITHUB_REDIRECT_URI,
+        "google_redirect_uri": settings.GOOGLE_REDIRECT_URI,
         "cors_settings": {
             "allow_credentials": True,
             "allow_methods": ["*"],
