@@ -13,19 +13,19 @@ app = FastAPI(
 )
 
 # CORS 설정 - 로컬과 프로덕션 URL 모두 포함
-cors_origins = ["http://localhost:5173"]
+allowed_origins = ["http://localhost:5173"]
 
 # 프로덕션 프론트엔드 URL 추가 (환경변수)
 frontend_url = os.getenv("FRONTEND_URL", "").strip().rstrip('/')
 if frontend_url:
-    cors_origins.append(frontend_url)
+    allowed_origins.append(frontend_url)
 
 # Log CORS origins for debugging
-print(f"CORS origins: {cors_origins}")
+print(f"CORS origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,7 +56,8 @@ async def health_check():
 async def debug_cors():
     return {
         "environment": os.getenv("ENVIRONMENT", "not set"),
-        "allowed_origins": allowed_origins,
+        "frontend_url": frontend_url,
+        "allowed_origins": cors_origins,
         "cors_settings": {
             "allow_credentials": True,
             "allow_methods": ["*"],
