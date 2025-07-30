@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: cicdai_password
       POSTGRES_DB: cicdai_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -35,7 +35,7 @@ services:
     build: ./backend
     container_name: cicdai_backend
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://cicdai_user:cicdai_password@db:5432/cicdai_db
       REDIS_URL: redis://redis:6379
@@ -54,12 +54,12 @@ services:
     build: ./frontend
     container_name: cicdai_frontend
     ports:
-      - "5173:5173"
+      - "5174:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8001
     command: npm run dev -- --host
 
 volumes:
