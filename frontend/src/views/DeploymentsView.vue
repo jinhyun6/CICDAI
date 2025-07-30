@@ -127,6 +127,7 @@ import DeploymentStatus from '../components/DeploymentStatus.vue'
 import { projectsAPI } from '../api/projects'
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
+import { API_BASE_URL } from '../config/api'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -181,7 +182,7 @@ const showRollbackModal = async (deployment) => {
   
   // 리비전 목록 가져오기
   try {
-    const response = await fetch(`http://localhost:8000/api/rollback/revisions/${deployment.id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/rollback/revisions/${deployment.id}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
       }
@@ -207,7 +208,7 @@ const performRollback = async () => {
   rollbackError.value = ''
   
   try {
-    const response = await fetch(`http://localhost:8000/api/rollback/rollback/${rollbackTarget.value.id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/rollback/rollback/${rollbackTarget.value.id}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,

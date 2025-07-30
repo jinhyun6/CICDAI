@@ -71,6 +71,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
 const props = defineProps({
   owner: String,
@@ -90,7 +91,7 @@ const fetchWorkflows = async () => {
   try {
     const token = localStorage.getItem('jwt_token')
     const response = await axios.get(
-      `http://localhost:8000/api/deployment/status/${props.owner}/${props.repo}`,
+      `${API_BASE_URL}/api/deployment/status/${props.owner}/${props.repo}`,
       {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -119,7 +120,7 @@ const selectWorkflow = async (workflow) => {
   try {
     const token = localStorage.getItem('jwt_token')
     const response = await axios.get(
-      `http://localhost:8000/api/deployment/status/${props.owner}/${props.repo}?run_id=${workflow.id}`,
+      `${API_BASE_URL}/api/deployment/status/${props.owner}/${props.repo}?run_id=${workflow.id}`,
       {
         headers: {
           'Authorization': `Bearer ${token}`

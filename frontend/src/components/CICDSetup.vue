@@ -228,6 +228,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 import DeploymentStatus from './DeploymentStatus.vue'
 
 // 실제 데이터
@@ -269,7 +270,7 @@ const loadRepositories = async () => {
   isLoadingRepos.value = true
   try {
     const token = localStorage.getItem('jwt_token')
-    const response = await axios.get('http://localhost:8000/api/github/repos', {
+    const response = await axios.get(`${API_BASE_URL}/api/github/repos`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -324,7 +325,7 @@ const analyzeRepository = async () => {
     if (useAIAnalysis.value) {
       // AI 분석 사용
       try {
-        const aiResponse = await axios.post('http://localhost:8000/api/analyze/ai-analyze-and-generate', {
+        const aiResponse = await axios.post(`${API_BASE_URL}/api/analyze/ai-analyze-and-generate`, {
           repo_full_name: selectedRepo.value
         }, {
           headers: {
@@ -360,7 +361,7 @@ const analyzeRepository = async () => {
     }
     
     // 기본 분석 (AI 실패 시 또는 AI 사용 안 함)
-    const response = await axios.post('http://localhost:8000/api/analyze/analyze-repo', {
+    const response = await axios.post(`${API_BASE_URL}/api/analyze/analyze-repo`, {
       repo_full_name: selectedRepo.value
     }, {
       headers: {
@@ -387,7 +388,7 @@ const loadProjects = async () => {
   isLoadingProjects.value = true
   try {
     const token = localStorage.getItem('jwt_token')
-    const response = await axios.get('http://localhost:8000/api/gcp/projects', {
+    const response = await axios.get(`${API_BASE_URL}/api/gcp/projects`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -514,7 +515,7 @@ const executeSetup = async () => {
       // Step 1: GitHub에 파일 커밋
       setupStatus.value.steps[1].status = 'in-progress'
       
-      const commitResponse = await axios.post('http://localhost:8000/api/github-actions/commit-cicd-files', {
+      const commitResponse = await axios.post(`${API_BASE_URL}/api/github-actions/commit-cicd-files`, {
         repo_full_name: selectedRepo.value,
         generated_files: aiAnalysisResult.value.generated_files,
         force_overwrite: fileOverwriteOption.value === 'overwrite'
@@ -539,7 +540,7 @@ const executeSetup = async () => {
           }
         })
         
-        const secretsResponse = await axios.post('http://localhost:8000/api/github-actions/setup-github-secrets', {
+        const secretsResponse = await axios.post(`${API_BASE_URL}/api/github-actions/setup-github-secrets`, {
           repo_full_name: selectedRepo.value,
           gcp_project_id: selectedProject.value,
           service_name: serviceName.value,
@@ -557,7 +558,7 @@ const executeSetup = async () => {
           // Step 3: GCP 서비스 계정 생성
           setupStatus.value.steps[3].status = 'in-progress'
           
-          const gcpResponse = await axios.post('http://localhost:8000/api/gcp-setup/create-service-account-for-cicd', {
+          const gcpResponse = await axios.post(`${API_BASE_URL}/api/gcp-setup/create-service-account-for-cicd`, {
             gcp_project_id: selectedProject.value,
             repo_full_name: selectedRepo.value,
             service_name: serviceName.value
@@ -574,7 +575,7 @@ const executeSetup = async () => {
           }
           
           // 최종 검증
-          const verifyResponse = await axios.post('http://localhost:8000/api/gcp-setup/verify-gcp-setup', {
+          const verifyResponse = await axios.post(`${API_BASE_URL}/api/gcp-setup/verify-gcp-setup`, {
             gcp_project_id: selectedProject.value,
             repo_full_name: selectedRepo.value
           }, {
@@ -609,7 +610,7 @@ const executeSetup = async () => {
       }
     })
 
-    const response = await axios.post('http://localhost:8000/api/cicd/setup', {
+    const response = await axios.post(`${API_BASE_URL}/api/cicd/setup`, {
       github_repo: selectedRepo.value,
       gcp_project_id: selectedProject.value,
       service_name: serviceName.value,
