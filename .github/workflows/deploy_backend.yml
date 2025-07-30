@@ -35,6 +35,6 @@ jobs:
         source: ./backend
         region: ${{ env.REGION }}
         env_vars: |
-          ANTROPIC_API_KEY=${{ secrets.ANTROPIC_API_KEY }}
+          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           DATABASE_URL=${{ secrets.DATABASE_URL }}
