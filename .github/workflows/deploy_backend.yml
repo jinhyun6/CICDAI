@@ -9,7 +9,7 @@ on:
       - '.github/workflows/deploy-backend.yml'
 
 env:
-  SERVICE_NAME: my-backend-api
+  SERVICE_NAME: cicdai-backend
   REGION: asia-northeast3  # 서울 리전
 
 jobs:
