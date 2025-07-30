@@ -45,13 +45,24 @@ jobs:
           GITHUB_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
     
     - name: Get Service URL and Update Environment
       run: |
-        SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
+        # Get the service URL from the deployment output
+        SERVICE_URL=${{ steps.deploy.outputs.url }}
+        echo "Service URL from deploy: $SERVICE_URL"
+        
+        # If that doesn't work, get it manually
+        if [ -z "$SERVICE_URL" ]; then
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
+          echo "Service URL from describe: $SERVICE_URL"
+        fi
+        
         echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
         
         # Update the service with its own URL
+        echo "Updating BASE_URL to: $SERVICE_URL"
         gcloud run services update ${{ env.SERVICE_NAME }} \
           --region ${{ env.REGION }} \
           --update-env-vars BASE_URL=$SERVICE_URL
