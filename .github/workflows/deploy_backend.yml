@@ -49,15 +49,10 @@ jobs:
     
     - name: Get Service URL and Update Environment
       run: |
-        # Get the service URL from the deployment output
-        SERVICE_URL=${{ steps.deploy.outputs.url }}
-        echo "Service URL from deploy: $SERVICE_URL"
-        
-        # If that doesn't work, get it manually
-        if [ -z "$SERVICE_URL" ]; then
-          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
-          echo "Service URL from describe: $SERVICE_URL"
-        fi
+        # Always get the URL from gcloud directly after deployment
+        echo "Getting service URL from gcloud..."
+        SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
+        echo "Service URL: $SERVICE_URL"
         
         echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
         
