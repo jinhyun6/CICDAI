@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from app.api import auth, github, gcp, cicd, deployment, projects, rollback, analyze, github_actions, gcp_setup
 from app.core.config import settings
+from app.core.database import engine, Base
 import os
 import uvicorn
 
@@ -31,6 +32,14 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+# Startup event to create tables
+@app.on_event("startup")
+async def startup_event():
+    """Create database tables on startup"""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    print("Database tables created/verified")
 
 # 라우터 등록
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
