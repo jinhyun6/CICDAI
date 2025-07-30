@@ -30,6 +30,7 @@ jobs:
       uses: google-github-actions/setup-gcloud@v1
     
     - name: Deploy to Cloud Run
+      id: deploy
       uses: google-github-actions/deploy-cloudrun@v1
       with:
         service: ${{ env.SERVICE_NAME }}
@@ -40,3 +41,22 @@ jobs:
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           DATABASE_URL=${{ secrets.DATABASE_URL }}
+    
+    - name: Get Service URL and Update Environment
+      run: |
+        SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region ${{ env.REGION }} --format 'value(status.url)')
+        echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
+        
+        # Update the service with its own URL
+        gcloud run services update ${{ env.SERVICE_NAME }} \
+          --region ${{ env.REGION }} \
+          --update-env-vars BASE_URL=$SERVICE_URL
+        
+    - name: Show deployment info
+      run: |
+        echo "✅ Backend deployed successfully!"
+        echo "🔗 Service URL: ${{ env.SERVICE_URL }}"
+        echo ""
+        echo "📝 OAuth Redirect URIs:"
+        echo "GitHub: ${{ env.SERVICE_URL }}/api/auth/github/callback"
+        echo "Google: ${{ env.SERVICE_URL }}/api/auth/google/callback"
